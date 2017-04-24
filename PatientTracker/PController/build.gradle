@@ -3,13 +3,14 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
+
     defaultConfig {
-        applicationId "com.emishealth.patienttracker"
+        applicationId "com.pcontroller"
         minSdkVersion 15
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
-        multiDexEnabled true
+
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
     }
@@ -19,23 +20,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
 }
 
 dependencies {
     compile 'com.google.firebase:firebase-core:10.2.1'
     compile 'com.google.firebase:firebase-messaging:9.6.0'
-    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'com.google.android.gms:play-services:10.2.1'
+    compile fileTree(dir: 'libs', include: ['*.jar'])
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    wearApp project(':wear')
-    compile 'com.google.android.gms:play-services:10.2.1'
     compile 'com.android.support:appcompat-v7:25.1.0'
     compile 'com.android.support:design:25.1.0'
     testCompile 'junit:junit:4.12'
-    compile 'com.google.android.gms:play-services:10.2.1'
+    compile 'com.google.android.gms:play-services-base:10.2.1'
+    compile 'com.google.android.gms:play-services-maps:10.2.1'
+    compile 'com.google.firebase:firebase-database:10.2.1'
+    compile 'com.google.android.gms:play-services-location:10.2.1'
 }
 // ADD THIS AT THE BOTTOM
 apply plugin: 'com.google.gms.google-services'
-
