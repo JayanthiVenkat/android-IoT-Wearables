@@ -39,7 +39,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class NotificationReceiver extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public class LocationTrackerActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     private GoogleMap googleMap;
     private LocationManager locationManager;
@@ -89,7 +89,7 @@ public class NotificationReceiver extends FragmentActivity implements OnMapReady
     public void onMapReady(GoogleMap googleMap) {
         this.googleMap = googleMap;
         Log.d("TAG", "--onMapReady" + (googleMap != null));
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -174,7 +174,7 @@ public class NotificationReceiver extends FragmentActivity implements OnMapReady
         // The pending intent will be invoked when the device enters or exits the region 20 meters
         // away from the marked point
         // The -1 indicates that, the monitor will not be expired
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -190,7 +190,7 @@ public class NotificationReceiver extends FragmentActivity implements OnMapReady
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -222,7 +222,7 @@ public class NotificationReceiver extends FragmentActivity implements OnMapReady
 
     public void getLocation() {
         System.out.println(" on start of getLocation");
-        TrackGPS gps = new TrackGPS(NotificationReceiver.this);
+        TrackGPS gps = new TrackGPS(LocationTrackerActivity.this);
         if (gps.canGetLocation()) {
             longitude = gps.getLongitude();
             latitude = gps.getLatitude();
@@ -272,7 +272,7 @@ public class NotificationReceiver extends FragmentActivity implements OnMapReady
         proximityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         pendingIntent = PendingIntent.getActivity(getBaseContext(), 0, proximityIntent, 0);
         // Removing the proximity alert
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -319,7 +319,7 @@ public class NotificationReceiver extends FragmentActivity implements OnMapReady
                         .setContentTitle("Alert")
                         .setContentText("Patient is moving out from safe zone");
 
-        Intent notificationIntent = new Intent(this, NotificationReceiver.class);
+        Intent notificationIntent = new Intent(this, LocationTrackerActivity.class);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
         builder.setContentIntent(contentIntent);
