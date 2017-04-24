@@ -1,0 +1,99 @@
+{
+  "project_info": {
+    "project_number": "293679674955",
+    "firebase_url": "https://patienttracker-def27.firebaseio.com",
+    "project_id": "patienttracker-def27",
+    "storage_bucket": "patienttracker-def27.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:293679674955:android:b805a4b3952194ab",
+        "android_client_info": {
+          "package_name": "com.emishealth.patienttracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "293679674955-rfab7099l8f0ffqdd37ordec42kepjfd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.emishealth.patienttracker",
+            "certificate_hash": "8da09a0db9c01dbe4e6ad22d553bd6d87e413d70"
+          }
+        },
+        {
+          "client_id": "293679674955-boogard6hkbifusvsllmro64fkc9meth.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCa0z_xDyRVSwGvKNErNAmzfr6T0dFz1F0"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "293679674955-boogard6hkbifusvsllmro64fkc9meth.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:293679674955:android:5f2cd16b8ec84759",
+        "android_client_info": {
+          "package_name": "com.pcontroller"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "293679674955-lt84bgm30b0k30342l401gl9jb25g23g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pcontroller",
+            "certificate_hash": "8da09a0db9c01dbe4e6ad22d553bd6d87e413d70"
+          }
+        },
+        {
+          "client_id": "293679674955-boogard6hkbifusvsllmro64fkc9meth.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCa0z_xDyRVSwGvKNErNAmzfr6T0dFz1F0"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "293679674955-boogard6hkbifusvsllmro64fkc9meth.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

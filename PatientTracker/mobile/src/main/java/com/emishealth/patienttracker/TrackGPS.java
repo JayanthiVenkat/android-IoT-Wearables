@@ -1,7 +1,6 @@
 package com.emishealth.patienttracker;
 
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Service;
 import android.content.Context;
@@ -74,8 +73,8 @@ public class TrackGPS extends Service implements LocationListener {
                 // First get location from Network Provider
                 if (isNetworkEnabled) {
                     System.out.println(" start of isNetworkEnabled");
-                    if (ActivityCompat.checkSelfPermission((MapsActivity) mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                        ActivityCompat.requestPermissions((MapsActivity) mContext, new String[]{
+                    if (ActivityCompat.checkSelfPermission((LocationTrackerActivity) mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions((LocationTrackerActivity) mContext, new String[]{
                                 android.Manifest.permission.ACCESS_FINE_LOCATION
                         }, 10);
                     }
@@ -131,8 +130,8 @@ public class TrackGPS extends Service implements LocationListener {
     public void stopUsingGPS() {
         if (locationManager != null) {
 
-            if (ActivityCompat.checkSelfPermission((MapsActivity) mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions((MapsActivity) mContext, new String[]{
+            if (ActivityCompat.checkSelfPermission((LocationTrackerActivity) mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions((LocationTrackerActivity) mContext, new String[]{
                         android.Manifest.permission.ACCESS_FINE_LOCATION
                 }, 10);
             }

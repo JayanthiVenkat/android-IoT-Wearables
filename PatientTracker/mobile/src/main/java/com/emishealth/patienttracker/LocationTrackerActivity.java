@@ -1,8 +1,11 @@
 package com.emishealth.patienttracker;
 
+import android.Manifest;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -12,9 +15,13 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.emishealth.patienttracker.entities.LocationModel;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -25,8 +32,14 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener {
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class LocationTrackerActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     private GoogleMap googleMap;
     private LocationManager locationManager;
@@ -34,15 +47,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleApiClient googleApiClient;
     private double longitude;
     private double latitude;
+    private DatabaseReference mFirebaseDatabase;
+    private FirebaseDatabase mFirebaseInstance;
+    private BroadcastReceiver mRegistrationBroadcastReceiver;
+    String deviceId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        getLocation();
+
+
     }
 
     private void buildGoogleApiClient() {
@@ -68,7 +89,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         this.googleMap = googleMap;
         Log.d("TAG", "--onMapReady" + (googleMap != null));
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -166,7 +187,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // The pending intent will be invoked when the device enters or exits the region 20 meters
         // away from the marked point
         // The -1 indicates that, the monitor will not be expired
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -182,7 +203,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -197,7 +218,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (mLastLocation != null) {
             latitude = mLastLocation.getLatitude();
             longitude = mLastLocation.getLongitude();
-         //   LatLng loc = new LatLng(latitude, longitude);
+            //   LatLng loc = new LatLng(latitude, longitude);
             loadCoordinates();
         }
     }
@@ -213,7 +234,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void getLocation() {
-        TrackGPS gps = new TrackGPS(MapsActivity.this);
+        System.out.println(" on start of getLocation");
+        TrackGPS gps = new TrackGPS(LocationTrackerActivity.this);
         if (gps.canGetLocation()) {
             longitude = gps.getLongitude();
             latitude = gps.getLatitude();
@@ -221,16 +243,49 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } else {
             gps.showSettingsAlert();
         }
+        saveToDB();
+    }
+
+    private void saveToDB() {
+        System.out.println(" on start of saveToDB");
+        FirebaseApp.initializeApp(getApplicationContext());
+        mFirebaseInstance = FirebaseDatabase.getInstance();
+        mFirebaseDatabase = mFirebaseInstance.getReference("users");
+
+        // get reference to 'users' node
+        // mFirebaseDatabase = mFirebaseInstance.getReference("users");
+
+        // store app title to 'app_title' node
+        mFirebaseInstance.getReference("Track").setValue("TrackerDB");
+
+
+        LocationModel user = new LocationModel();
+        user.setLatitude(String.valueOf(latitude));
+        user.setLongitude(String.valueOf(longitude));
+        user.setDeviceId(loadIMEI());
+        user.setTimeObserved(getCurrentTime());
+
+//        mFirebaseDatabase
+//                .child("Track").child("location").setValue(user);
+
+//        String userId = mFirebaseDatabase.push().getKey();
+
+        String userId = loadIMEI();
+        if (userId == null)
+            userId = mFirebaseDatabase.push().getKey();
+        mFirebaseDatabase.child(userId).setValue(user);
+
+
     }
 
     @Override
     public void onMapLongClick(LatLng latLng) {
-        Log.d("TAG","--onMapLongClickListener");
+        Log.d("TAG", "--onMapLongClickListener");
         Intent proximityIntent = new Intent("com.emishealth.patienttracker.proximity.receiver");
         proximityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         pendingIntent = PendingIntent.getActivity(getBaseContext(), 0, proximityIntent, 0);
         // Removing the proximity alert
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -242,9 +297,68 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         locationManager.removeProximityAlert(pendingIntent);
 
-       // Removing the marker and circle from the Google Map
+        // Removing the marker and circle from the Google Map
         googleMap.clear();
 
 
     }
+
+    public String loadIMEI() {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE}, 12);
+        } else {
+            TelephonyManager telephonyManager = (TelephonyManager) this
+                    .getSystemService(Context.TELEPHONY_SERVICE);
+            deviceId = telephonyManager.getDeviceId();
+        }
+
+
+        System.out.println("ime " + deviceId);
+        return deviceId;
+    }
+
+
+    public String getCurrentTime() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String millisInString = dateFormat.format(new Date());
+        return millisInString;
+    }
+
+    private void addNotification() {
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(this)
+                        .setContentTitle("Alert")
+                        .setContentText("Patient is moving out from safe zone");
+
+        Intent notificationIntent = new Intent(this, LocationTrackerActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.setContentIntent(contentIntent);
+
+        // Add as notification
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        manager.notify(0, builder.build());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case 12: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission granted!
+                    loadIMEI();
+                } else {
+                    // permission denied
+                }
+                return;
+            }
+
+        }
+    }
+
+
 }
