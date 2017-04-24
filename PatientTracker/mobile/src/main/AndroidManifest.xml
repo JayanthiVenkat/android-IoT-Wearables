@@ -54,6 +54,12 @@
             <intent-filter>
                 <action android:name="com.emishealth.patienttracker.proximity.receiver" />
 
+                <receiver android:name=".ProximityReceiver">
+                    <intent-filter>
+                        <action android:name="com.emishealth.patienttracker.proximity.receiver" />
+                    </intent-filter>
+                </receiver>
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -73,3 +79,5 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
 </manifest>
+
+
