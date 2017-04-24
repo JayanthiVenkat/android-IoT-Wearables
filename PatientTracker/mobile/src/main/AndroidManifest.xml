@@ -50,13 +50,12 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-         <activity
-             android:name=".ProximityActivity">
-             <intent-filter >
-                 <action android:name="com.emishealth.patienttracker.proximity.receiver"/>
-                 <category android:name="android.intent.category.DEFAULT" />
-             </intent-filter>
-         </activity>
+
+        <receiver android:name=".ProximityReceiver">
+            <intent-filter >
+                <action android:name="com.emishealth.patienttracker.proximity.receiver"/>
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".NotificationView">
@@ -67,3 +66,11 @@
     </application>
 
 </manifest>
+<!-- <activity
+             android:name=".ProximityActivity">
+             <intent-filter >
+                 <action android:name="com.emishealth.patienttracker.proximity.receiver"/>
+                 <category android:name="android.intent.category.DEFAULT" />
+             </intent-filter>
+         </activity>
+        -->

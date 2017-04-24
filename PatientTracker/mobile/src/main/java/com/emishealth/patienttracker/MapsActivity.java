@@ -112,11 +112,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+   /* private void checkLocation(MarkerOptions markerOptions,CircleOptions circleOptions){
+        Location.distanceBetween(markerOptions.getPosition().latitude,
+                markerOptions.getPosition().longitude, circleOptions.getCenter().latitude,
+                circleOptions.getCenter().longitude, distance);
+
+        if (distance[0] > mCircle.getRadius()) {
+            //Do what you need
+
+        }else if (distance[0] < mCircle.getRadius()) {
+            //Do what you need
+        }
+    }*/
     private void drawMarker(LatLng point) {
         Log.d("TAG", "--drawMarker" + (point != null));
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(point);
         this.googleMap.addMarker(markerOptions);
+
     }
 
     private void drawCircle(LatLng point) {
@@ -147,7 +160,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         proximityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         // Creating a pending intent which will be invoked by LocationManager when the specified region is
         // entered or exited
-        pendingIntent = PendingIntent.getActivity(getBaseContext(), 0, proximityIntent, 0);
+        pendingIntent = PendingIntent.getBroadcast(getBaseContext(), 0, proximityIntent, 0);
 
         // Setting proximity alert
         // The pending intent will be invoked when the device enters or exits the region 20 meters
@@ -163,7 +176,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        locationManager.addProximityAlert(point.latitude, point.longitude, 5, -1, pendingIntent);
+        locationManager.addProximityAlert(point.latitude, point.longitude, 20, 1000000, pendingIntent);
         Toast.makeText(getBaseContext(), "Proximity Alert is added", Toast.LENGTH_SHORT).show();
     }
 
