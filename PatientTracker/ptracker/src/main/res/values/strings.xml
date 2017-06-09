@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PTracker</string>
+    <string name="title_activity_geo_fense">Map</string>
+</resources>

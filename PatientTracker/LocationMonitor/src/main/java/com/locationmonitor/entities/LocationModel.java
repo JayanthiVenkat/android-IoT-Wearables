@@ -1,4 +1,4 @@
-package com.pcontroller.entities;
+package com.locationmonitor.entities;
 
 /**
  * Created by Dayana Kanagaraj on 23-Apr-17.

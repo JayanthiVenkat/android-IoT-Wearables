@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.pcontroller">
+    package="com.ptracker">
 
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
@@ -11,7 +11,7 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/tracker"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
@@ -30,7 +30,13 @@
 
         <activity
             android:name=".LocationTrackerActivity"
-            android:label="@string/title_activity_maps">
+            android:label="PTracker">
+
+        </activity>
+        <activity
+            android:name=".SplashScreen"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

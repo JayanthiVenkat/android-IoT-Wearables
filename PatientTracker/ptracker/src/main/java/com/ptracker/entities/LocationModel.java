@@ -1,4 +1,4 @@
-package com.pcontroller.entities;
+package com.ptracker.entities;
 
 /**
  * Created by Dayana Kanagaraj on 23-Apr-17.
@@ -8,8 +8,8 @@ public class LocationModel {
     private String latitude;
     private String longitude;
     private String deviceId;
-    private String timeObserved;
     private String deviceName;
+    private String timeObserved;
 
     public String getLatitude() {
         return latitude;

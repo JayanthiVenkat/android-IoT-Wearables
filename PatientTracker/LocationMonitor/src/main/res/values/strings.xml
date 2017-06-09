@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">LocationMonitor</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="title_activity_splash_screen">SplashScreen</string>
+</resources>

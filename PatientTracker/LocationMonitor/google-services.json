@@ -137,6 +137,37 @@
           "status": 2
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:293679674955:android:258cd6895a38b61c",
+        "android_client_info": {
+          "package_name": "com.locationmonitor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "293679674955-boogard6hkbifusvsllmro64fkc9meth.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCa0z_xDyRVSwGvKNErNAmzfr6T0dFz1F0"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
     }
   ],
   "configuration_version": "1"

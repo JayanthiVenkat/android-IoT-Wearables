@@ -1,0 +1,453 @@
+package com.pcontroller;
+
+import android.Manifest;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
+import android.util.Log;
+import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.FirebaseInstanceIdService;
+import com.pcontroller.entities.LocationModel;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+public class LocationTrackerActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+
+    private GoogleMap googleMap;
+    private LocationManager locationManager;
+    private PendingIntent pendingIntent;
+    private GoogleApiClient googleApiClient;
+    // LatLng currentLocation;
+    private DatabaseReference mFirebaseDatabase;
+    private FirebaseDatabase mFirebaseInstance;
+    private BroadcastReceiver mRegistrationBroadcastReceiver;
+    String deviceId;
+    LatLng guindyLocation = new LatLng(12.9754633, 80.1561648);
+    private DatabaseReference databaseReference;
+    private List<LocationModel> patientsTrack;
+    private CircleOptions circleOptions;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        System.out.println("on start of create location monitor");
+        setContentView(R.layout.activity_maps);
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
+        FirebaseApp.initializeApp(getApplicationContext());
+
+
+        FirebaseDatabase mFirebaseDatabase = FirebaseDatabase.getInstance();
+        // DatabaseReference databaseReference = mFirebaseDatabase.getReference("https://patienttracker-def27.firebaseio.com/");
+        // get reference to 'users' node
+        databaseReference = mFirebaseDatabase.getReference("users");
+        System.out.println("Db refer " + databaseReference);
+        databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                System.out.println("on start of onDataChange");
+                patientsTrack = new ArrayList<LocationModel>();
+
+                for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
+                    LocationModel location = new LocationModel();
+                    location.setDeviceId(childDataSnapshot.getKey());
+                    location.setLatitude(childDataSnapshot.child("latitude").getValue().toString());
+                    location.setLongitude(childDataSnapshot.child("longitude").getValue().toString());
+                    location.setTimeObserved(childDataSnapshot.child("timeObserved").getValue().toString());
+                    location.setDeviceName(childDataSnapshot.child("deviceName").getValue().toString());
+                    System.out.println("**********************");
+                    Log.v("Got value getKey ", "" + childDataSnapshot.getKey()); //displays the key for the node
+                    Log.v("Got value latitude ", "" + childDataSnapshot.child("latitude").getValue());
+                    Log.v("Got value longitude ", "" + childDataSnapshot.child("longitude").getValue());
+                    Log.v("Got value deviceId ", "" + childDataSnapshot.child("deviceId").getValue());
+                    Log.v("Got value timeObserved ", "" + childDataSnapshot.child("timeObserved").getValue());  //gives the value for given keyname
+                    Log.v("Got value deviceId ", "" + childDataSnapshot.child("deviceName").getValue());
+                    System.out.println("**********************");
+                }
+                doProximityCheck();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+
+    }
+
+
+    private void buildGoogleApiClient() {
+        if (googleApiClient == null) {
+            googleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+    }
+
+    /**
+     * Manipulates the map once available.
+     * This callback is triggered when the map is ready to be used.
+     * This is where we can add markers or lines, add listeners or move the camera. In this case,
+     * we just add a marker near Sydney, Australia.
+     * If Google Play services is not installed on the device, the user will be prompted to install
+     * it inside the SupportMapFragment. This method will only be triggered once the user has
+     * installed Google Play services and returned to the app.
+     */
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        this.googleMap = googleMap;
+        Log.d("TAG", "--onMapReady" + (googleMap != null));
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        // Enabling MyLocation Layer of Google Map
+        this.googleMap.setMyLocationEnabled(true);
+        buildGoogleApiClient();
+        this.googleMap.setMyLocationEnabled(true);
+        this.googleMap.setIndoorEnabled(true);
+        this.googleMap.getUiSettings().setZoomControlsEnabled(true);
+        this.googleMap.getUiSettings().setMyLocationButtonEnabled(true);
+        this.googleMap.getUiSettings().setCompassEnabled(false);
+        this.googleMap.getUiSettings().setAllGesturesEnabled(true);
+        this.googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        this.googleMap.setOnMapClickListener(this);
+        this.googleMap.setOnMapLongClickListener(this);
+        googleApiClient.connect();
+
+        // Add a marker in Sydney and move the camera
+        //   LatLng sydney = new LatLng(-34, 151);
+        // this.googleMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        //this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    private void loadCoordinates(LatLng location) {
+        // Getting LocationManager object from System Service LOCATION_SERVICE
+
+
+        //  getLocation();
+        if (location != null) {
+            LatLng loc = new LatLng(location.latitude, location.longitude);
+            drawCircle(loc);
+            drawMarker(loc, "Hospital Campus");
+            this.googleMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
+            this.googleMap.animateCamera(CameraUpdateFactory.zoomTo(17));
+        }
+    }
+
+
+    /* private void checkLocation(MarkerOptions markerOptions,CircleOptions circleOptions){
+         Location.distanceBetween(markerOptions.getPosition().latitude,
+                 markerOptions.getPosition().longitude, circleOptions.getCenter().latitude,
+                 circleOptions.getCenter().longitude, distance);
+
+         if (distance[0] > mCircle.getRadius()) {
+             //Do what you need
+
+         }else if (distance[0] < mCircle.getRadius()) {
+             //Do what you need
+         }
+     }*/
+    private void drawMarker(LatLng point, String title) {
+        Log.d("TAG", "--drawMarker" + (point != null));
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.title(title);
+        markerOptions.position(point);
+        this.googleMap.addMarker(markerOptions);
+
+    }
+
+    private void drawCircle(LatLng point) {
+        Log.d("TAG", "--drawCircle" + (point != null));
+        circleOptions = new CircleOptions();
+        circleOptions.center(point);
+        circleOptions.radius(100);
+        circleOptions.strokeColor(Color.BLACK);
+        circleOptions.fillColor(0x30ff0000);
+        circleOptions.strokeWidth(2);
+        Log.d("TAG", "--this.googleMap" + (this.googleMap != null));
+        this.googleMap.addCircle(circleOptions);
+    }
+
+    @Override
+    public void onMapClick(LatLng point) {
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        loadCoordinates(guindyLocation);
+        addFense();
+//        Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+//                googleApiClient);
+//        if (mLastLocation != null) {
+//            currentLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+//            System.out.println("latitude and lon " + currentLocation.latitude + " " + currentLocation.longitude);
+//            drawMarker(currentLocation, "Patient:John");
+//            saveToDB();
+//
+//        }
+    }
+
+    private void addFense() {
+        // Removes the existing marker from the Google Map
+        googleMap.clear();
+
+        // Drawing marker on the map
+        drawMarker(guindyLocation, "Hospital Campus");
+
+        // Drawing circle on the map
+        drawCircle(guindyLocation);
+
+        // This intent will call the activity ProximityActivity
+        Intent proximityIntent = new Intent("com.emishealth.patienttracker.proximity.receiver");
+        proximityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        // Creating a pending intent which will be invoked by LocationManager when the specified region is
+        // entered or exited
+        pendingIntent = PendingIntent.getBroadcast(getBaseContext(), 0, proximityIntent, 0);
+
+        // Setting proximity alert
+        // The pending intent will be invoked when the device enters or exits the region 20 meters
+        // away from the marked point
+        // The -1 indicates that, the monitor will not be expired
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        locationManager.addProximityAlert(guindyLocation.latitude, guindyLocation.longitude, 20, 1000000, pendingIntent);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+
+    /**
+     * Returns the consumer friendly device name
+     */
+    public static String getDeviceName() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        if (model.startsWith(manufacturer)) {
+            return capitalize(model);
+        }
+        return capitalize(manufacturer) + " " + model;
+    }
+
+    private static String capitalize(String str) {
+        if (TextUtils.isEmpty(str)) {
+            return str;
+        }
+        char[] arr = str.toCharArray();
+        boolean capitalizeNext = true;
+
+        StringBuilder phrase = new StringBuilder();
+        for (char c : arr) {
+            if (capitalizeNext && Character.isLetter(c)) {
+                phrase.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+                continue;
+            } else if (Character.isWhitespace(c)) {
+                capitalizeNext = true;
+            }
+            phrase.append(c);
+        }
+
+        return phrase.toString();
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+        Log.d("TAG", "--onMapLongClickListener");
+       /* Intent proximityIntent = new Intent("com.emishealth.patienttracker.proximity.receiver");
+        proximityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        pendingIntent = PendingIntent.getActivity(getBaseContext(), 0, proximityIntent, 0);
+        // Removing the proximity alert
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        locationManager.removeProximityAlert(pendingIntent);
+
+        // Removing the marker and circle from the Google Map
+        googleMap.clear();*/
+
+
+    }
+
+    public String loadIMEI() {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE}, 12);
+        } else {
+            TelephonyManager telephonyManager = (TelephonyManager) this
+                    .getSystemService(Context.TELEPHONY_SERVICE);
+            deviceId = telephonyManager.getDeviceId();
+        }
+
+
+        System.out.println("ime " + deviceId);
+        return deviceId;
+    }
+
+
+    public String getCurrentTime() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String millisInString = dateFormat.format(new Date());
+        return millisInString;
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case 12: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission granted!
+                    loadIMEI();
+                } else {
+                    // permission denied
+                }
+                return;
+            }
+
+        }
+    }
+
+    private void addNotification() {
+        NotificationCompat.Builder builder =
+                new NotificationCompat.Builder(this)
+                        .setContentTitle("Alert")
+                        .setSmallIcon(R.drawable.cast_ic_notification_forward)
+                        .setContentText("Patient is moving out from safe zone");
+
+        Intent notificationIntent = new Intent(this, LocationTrackerActivity.class);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.setContentIntent(contentIntent);
+
+        // Add as notification
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        manager.notify(0, builder.build());
+    }
+
+    //Method to check the patient is in safe zone
+    private void doProximityCheck() {
+        System.out.println("on start of doProximityCheck ");
+        float[] distance = new float[2];
+        for (int i = 0; i < patientsTrack.size(); i++) {
+
+            Location.distanceBetween(Double.valueOf(patientsTrack.get(i).getLatitude()),
+                    Double.valueOf(patientsTrack.get(i).getLongitude()), guindyLocation.latitude,
+                    guindyLocation.longitude, distance);
+
+
+            if (distance[0] > circleOptions.getRadius()) {
+                addNotification();
+
+            } else if (distance[0] < circleOptions.getRadius()) {
+                Toast.makeText(this, "Patient is in safe zone ", Toast.LENGTH_LONG).show();
+
+            }
+        }
+
+
+    }
+
+    public class TokenAcc extends FirebaseInstanceIdService {
+        @Override
+        public void onTokenRefresh() {
+            String token = FirebaseInstanceId.getInstance().getToken();
+            sendRegToServer(token);
+
+
+        }
+    }
+
+    private void sendRegToServer(String token) {
+    }
+
+
+}
