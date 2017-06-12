@@ -2,4 +2,7 @@
     <string name="app_name">LocationMonitor</string>
     <string name="title_activity_maps">Map</string>
     <string name="title_activity_splash_screen">SplashScreen</string>
+    <string name="google_map_package">com.google.android.apps.maps</string>
+    <string name="google_map_class">com.google.android.maps.MapsActivity</string>
+    <string name="google_navigate_uri">google.navigation:q=</string>
 </resources>

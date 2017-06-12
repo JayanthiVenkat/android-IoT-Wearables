@@ -10,8 +10,10 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -21,6 +23,8 @@ import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -43,12 +47,13 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
 import com.pcontroller.entities.LocationModel;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class LocationTrackerActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public class LocationTrackerActivity extends FragmentActivity implements View.OnClickListener, OnMapReadyCallback, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     private GoogleMap googleMap;
     private LocationManager locationManager;
@@ -63,13 +68,18 @@ public class LocationTrackerActivity extends FragmentActivity implements OnMapRe
     private DatabaseReference databaseReference;
     private List<LocationModel> patientsTrack;
     private CircleOptions circleOptions;
+    private Button btnNavigate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         System.out.println("on start of create location monitor");
         setContentView(R.layout.activity_maps);
-
+        btnNavigate = (Button) findViewById(R.id.navigate);
+        btnNavigate.setOnClickListener(this);
+        if(savedInstanceState!=null){
+            patientsTrack = (List<LocationModel>) savedInstanceState.getSerializable("location");
+        }
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -396,7 +406,7 @@ public class LocationTrackerActivity extends FragmentActivity implements OnMapRe
         }
     }
 
-    private void addNotification() {
+    private void addNotification(List<LocationModel> patientsTrack) {
         NotificationCompat.Builder builder =
                 new NotificationCompat.Builder(this)
                         .setContentTitle("Alert")
@@ -404,10 +414,18 @@ public class LocationTrackerActivity extends FragmentActivity implements OnMapRe
                         .setContentText("Patient is moving out from safe zone");
 
         Intent notificationIntent = new Intent(this, LocationTrackerActivity.class);
+        Bundle args = new Bundle();
+        args.putSerializable("location", (Serializable) patientsTrack);
+        notificationIntent.putExtra("extra",args);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
         builder.setContentIntent(contentIntent);
-
+        //Vibration
+        builder.setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 });
+        //LED
+        builder.setLights(Color.RED, 3000, 3000);
+        //Ton
+        builder.setSound(Uri.parse("android.resource://com.pcontroller/" + R.raw.alert));//parse("uri://sadfasdfasdf.mp3"));
         // Add as notification
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         manager.notify(0, builder.build());
@@ -425,7 +443,7 @@ public class LocationTrackerActivity extends FragmentActivity implements OnMapRe
 
 
             if (distance[0] > circleOptions.getRadius()) {
-                addNotification();
+                addNotification(patientsTrack);
 
             } else if (distance[0] < circleOptions.getRadius()) {
                 Toast.makeText(this, "Patient is in safe zone ", Toast.LENGTH_LONG).show();
@@ -436,6 +454,21 @@ public class LocationTrackerActivity extends FragmentActivity implements OnMapRe
 
     }
 
+    @Override
+    public void onClick(View v) {
+        triggerNavigation();
+    }
+
+    private void triggerNavigation() {
+        LatLng destination = new LatLng(Double.parseDouble(patientsTrack.get(0).getLatitude()),Double.parseDouble(patientsTrack.get(0).getLongitude()));
+        Log.d("TGA","--destination "+destination.latitude+"---"+destination.longitude);
+        Intent navigation = new Intent(Intent.ACTION_VIEW, Uri.parse(getResources().getString(R.string.google_navigate_uri) + destination.latitude + "," + destination.longitude));// 10.985936 + "," + 76.965408)//TODO need to add dynamic destination coordinates
+        navigation.setClassName(getResources().getString(R.string.google_map_package), getResources().getString(R.string.google_map_class));
+        // To avoid crash if system cannot find app to handle intent
+        if (navigation.resolveActivity(getPackageManager()) != null) {
+            startActivity(navigation);
+        }
+    }
     public class TokenAcc extends FirebaseInstanceIdService {
         @Override
         public void onTokenRefresh() {
